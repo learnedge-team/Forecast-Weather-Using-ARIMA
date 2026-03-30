@@ -1,5 +1,104 @@
 # Weather Forecast Dashboard (ARIMA)
 
+```markdown
+# Weather Forecasting ARIMA Model Training Pipeline Documentation
+
+This document provides comprehensive documentation for the Python script designed to train an ARIMA model for daily temperature forecasting using historical weather data.
+
+## 1. Overview
+
+This pipeline automates the process of downloading a weather dataset, preprocessing it, training an optimal ARIMA (AutoRegressive Integrated Moving Average) model for temperature prediction, evaluating its performance, and saving the trained model and relevant artifacts for future use. The goal is to provide a robust framework for time series forecasting.
+
+## 2. Pipeline Steps
+
+The `main()` function orchestrates the entire process through several well-defined steps:
+
+### Step 1: `download_dataset()`
+- **Purpose**: Downloads the `muthuj7/weather-dataset` from Kaggle. This ensures that the script always works with the specified data source.
+- **Output**: Returns the local path where the dataset files are downloaded.
+
+### Step 2: `load_and_explore_data(path)`
+- **Purpose**: Loads the weather dataset from the provided path (identifying the CSV file within the downloaded directory) and performs initial data exploration.
+- **Exploration Includes**: Displaying dataset shape, column names, first 5 rows, data types, missing values, and basic statistical summaries.
+- **Output**: A Pandas DataFrame containing the raw weather data.
+
+### Step 3: `preprocess_data(df)`
+- **Purpose**: Cleans and transforms the raw DataFrame into a format suitable for time series modeling.
+- **Key Operations**:
+    - **Column Identification**: Dynamically identifies 'date' and 'temperature' columns based on keywords.
+    - **Date Parsing**: Converts the date column to UTC datetime objects and sets it as the DataFrame index.
+    - **Timezone Removal**: Removes timezone information from the index for consistency.
+    - **Missing Value Handling**: Drops rows with invalid dates and handles missing temperature values by resampling and filling (forward-fill then back-fill).
+    - **Duplicate Index Removal**: Ensures unique time steps in the index.
+    - **Resampling**: Aggregates hourly data to daily averages for temperature. This reduces noise and computational load.
+    - **Feature Extraction**: Extracts additional weather-related features (Humidity, Wind Speed, Pressure, Visibility, Apparent Temperature) and resamples them to daily averages.
+- **Output**: Two Pandas DataFrames: `ts_daily` (daily temperature time series) and `additional_features` (daily averages of other weather metrics).
+
+### Step 4-6: `train_arima_model(ts_daily)`
+- **Purpose**: Trains and evaluates an ARIMA model.
+- **Key Operations**:
+    - **Data Truncation**: Optionally uses the last 2 years of data for training if the dataset is very large, to manage computational time.
+    - **Train-Test Split**: Divides the data into 85% for training and 15% for testing.
+    - **ARIMA Parameter Search**: Iterates through a predefined grid of `(p, d, q)` orders to find the best ARIMA model based on the Akaike Information Criterion (AIC). The parameters `p_values = [0, 1, 2, 3, 5]`, `d_values = [0, 1, 2]`, `q_values = [0, 1, 2, 3]` are explored.
+    - **Model Training**: Fits an ARIMA model to the training data using the best-found order.
+    - **Evaluation**: Forecasts values for the test set and calculates key performance metrics: Mean Absolute Error (MAE), Root Mean Squared Error (RMSE), and Mean Absolute Percentage Error (MAPE).
+    - **Retraining on Full Data**: After identifying the best order, the model is retrained on the entire `ts_train_data` (either last 2 years or full dataset) to maximize the use of available historical information.
+- **Output**: Returns the final fitted ARIMA model, its best order, evaluation metrics, and the historical data used for training.
+
+### Step 7: `save_artifacts(model, order, metrics, ts_data, additional_features)`
+- **Purpose**: Persists the trained model and relevant data artifacts to disk.
+- **Key Operations**:
+    - **Serialization**: Uses Python's `pickle` module to save the fitted ARIMA model, its optimal order, evaluation metrics, historical temperature data, and additional weather features into a single `.pkl` file (`weather_arima_model.pkl`).
+    - **Separate Data Save**: Also saves the historical temperature and additional features data separately in `historical_weather_data.pkl` for easier access.
+    - **Verification**: Loads the saved model and performs a small forecast to confirm its integrity.
+- **Output**: The saved `weather_arima_model.pkl` and `historical_weather_data.pkl` files.
+
+## 3. Key Libraries Used
+
+- `kagglehub`: For dataset downloading.
+- `pandas`: For data manipulation and time series handling.
+- `numpy`: For numerical operations.
+- `statsmodels.tsa.arima.model.ARIMA`: The core library for ARIMA model implementation.
+- `sklearn.metrics`: For evaluating model performance (MAE, RMSE, MAPE).
+- `pickle`: For model serialization.
+- `os`: For file system operations.
+
+## 4. Model Details: ARIMA (p, d, q)
+
+ARIMA models are characterized by three parameters:
+- **p (Autoregressive order)**: The number of lagged observations in the model. This accounts for the relationship between the current observation and a number of preceding observations.
+- **d (Differencing order)**: The number of times the raw observations are differenced to make the time series stationary. A stationary time series has statistical properties that do not change over time (e.g., constant mean, variance).
+- **q (Moving Average order)**: The size of the moving average window, representing the dependency between an observation and a residual error from a moving average model applied to lagged observations.
+
+The pipeline systematically searches for the optimal combination of these parameters based on the AIC, which balances model fit and complexity.
+
+## 5. Performance Metrics
+
+- **MAE (Mean Absolute Error)**: The average of the absolute differences between actual and predicted values. It gives a direct measure of the average magnitude of the errors.
+- **RMSE (Root Mean Squared Error)**: The square root of the average of the squared differences between actual and predicted values. It gives more weight to larger errors, making it sensitive to outliers.
+- **MAPE (Mean Absolute Percentage Error)**: The average of the absolute percentage errors. It provides a percentage error measure, which can be useful for interpretation, especially when comparing models across different scales.
+
+## 6. Usage
+
+To run this pipeline, execute the script. It will automatically download the data, train the model, and save the artifacts.
+
+```python
+if __name__ == "__main__":
+    main()
+```
+
+After successful execution, the console will output the best ARIMA order found, the evaluation metrics (MAE, RMSE, MAPE), and confirm the creation of the `weather_arima_model.pkl` and `historical_weather_data.pkl` files.
+
+## 7. Next Steps
+
+The output suggests that the next logical step is to deploy or visualize the forecasts, potentially using a tool like Streamlit:
+
+```bash
+streamlit run app.py
+```
+(Note: An `app.py` script would need to be created separately to load the saved model and visualize the forecasts.)
+
+
 A Streamlit dashboard for daily temperature forecasting using an ARIMA model trained on the Muthuj7 weather dataset (Kaggle). This repository includes training and inference code, model artifacts, and interactive visualizations.
 
 Features
