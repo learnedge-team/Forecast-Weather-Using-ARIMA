@@ -1,6 +1,7 @@
 # Forecast-Weather-Using-ARIMA
 
 Deployed link : https://learnedge-forecast-weather-using-arima.streamlit.app/
+Dataset : https://www.kaggle.com/datasets/muthuj7/weather-dataset
 
 
 A Streamlit dashboard for daily temperature forecasting using an ARIMA model trained on the Muthuj7 weather dataset (Kaggle). This repository includes training and inference code, model artifacts, and interactive visualizations.
